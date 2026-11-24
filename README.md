@@ -31,16 +31,17 @@ Traditional signature/rule-based Intrusion Detection Systems (IDS) match traffic
 5. Package the trained model into an interactive dashboard for live/batch traffic classification.
 
 ## Project Status
-**Current stage: Phase 1 — Proof of Concept (complete).**
+**Current stage: Phase 2 — Multi-class classification + model comparison (complete).**
 
 | Phase | Description | Status |
 |---|---|---|
 | 1 | Data pipeline + baseline binary classifier (Random Forest) on NSL-KDD, with evaluation metrics | ✅ Done |
-| 2 | Multi-class attack-type classification; compare multiple algorithms (e.g. XGBoost, neural net) | ⏳ Planned |
+| 2 | Multi-class attack-category classification (DoS/Probe/R2L/U2R/normal); compare Random Forest, XGBoost, Neural Net; persist best model | ✅ Done |
 | 3 | Interactive Streamlit dashboard — upload/stream traffic, live predictions, visual alerts | ⏳ Planned |
 | 4 | Stretch: live packet capture integration, real-time monitoring | 💭 Stretch goal |
 
-Phase 1's runnable script (`code/poc.py`) loads NSL-KDD, trains a Random Forest, and prints accuracy/precision/recall/confusion-matrix/feature-importance — this is the evidence presented at Review 1 that the ML approach works on real benchmark data.
+- `poc.py` — Phase 1 binary (normal vs. attack) baseline.
+- `phase2.py` — Phase 2: classifies traffic into 5 categories (normal, DoS, Probe, R2L, U2R), trains and compares Random Forest / XGBoost / a Neural Network (MLP), and saves the best model + encoders + scaler to `model/` via `joblib` for reuse without retraining (needed by the Phase 3 dashboard).
 
 ## Architecture
 ```
@@ -95,9 +96,23 @@ Phase 1 baseline (Random Forest, binary normal-vs-attack) on the official NSL-KD
 
 Top predictive features: `src_bytes`, `dst_bytes`, `same_srv_rate`, `dst_host_same_srv_rate`, `flag`.
 
+### Phase 2 — multi-class model comparison
+Attack categories follow the standard NSL-KDD grouping: **DoS**, **Probe**, **R2L** (remote-to-local), **U2R** (user-to-root), and **normal**.
+
+| Model | Accuracy | Macro-Precision | Macro-Recall | Macro-F1 |
+|---|---|---|---|---|
+| Neural Network (MLP) | 0.777 | 0.880 | 0.527 | 0.545 |
+| XGBoost | 0.757 | 0.796 | 0.522 | 0.534 |
+| Random Forest | 0.751 | 0.773 | 0.497 | 0.506 |
+
+The Neural Network edges out the others on macro-F1 and was saved as the production model (`model/best_model.joblib`).
+
+**Why R2L/U2R recall is low across all three models:** both categories are extremely rare in training data (995 R2L and just 52 U2R records out of ~126,000) and the official test set again injects attack subtypes absent from training — the same generalization challenge noted in Phase 1, now visible per-category instead of being averaged away by the binary view. This is a known, published limitation of NSL-KDD and a legitimate discussion point: class imbalance + unseen-attack generalization is exactly the kind of real-world problem production IDS have to deal with, and it motivates Phase 3's focus on an interactive dashboard that can surface these per-class confidence differences to a human analyst rather than a single opaque verdict.
+
 ## Roadmap
-- [ ] Multi-class classification (identify specific attack type, not just normal/attack)
-- [ ] Compare Random Forest against XGBoost and a neural network baseline
-- [ ] Persist trained models with `joblib` for reuse without retraining
+- [x] Multi-class classification (identify specific attack type, not just normal/attack)
+- [x] Compare Random Forest against XGBoost and a neural network baseline
+- [x] Persist trained models with `joblib` for reuse without retraining
 - [ ] Streamlit dashboard: upload/stream traffic → live predictions → visual alerts and charts
 - [ ] Stretch: live packet capture (e.g. via `scapy`) for real-time monitoring instead of static CSVs
+- [ ] Stretch: address R2L/U2R class imbalance (e.g. SMOTE oversampling, class weighting)
