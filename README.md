@@ -56,19 +56,14 @@ NSL-KDD dataset  →  Preprocessing  →  ML Classifier  →  Evaluation  →  (
 
 ## Repository Structure
 ```
-final-year-project/
-├── README.md                              — you are here
-├── project-topic.txt                      — official assigned topic
-├── Project Registration form.docx         — institutional admin form
-├── Report_Template[1].docx                — institutional report template
-├── AIML_Student Faculty Project Mapping(1).xlsx  — student/guide/topic mapping
-└── code/                                  — everything runnable
-    ├── poc.py                             — Phase 1 proof-of-concept script
-    ├── requirements.txt                   — Python dependencies
-    ├── data/
-    │   ├── KDDTrain+.txt                  — NSL-KDD training set
-    │   └── KDDTest+.txt                   — NSL-KDD test set
-    └── model/                             — reserved for saved trained models (Phase 2+)
+.
+├── README.md             — you are here
+├── poc.py                — Phase 1 proof-of-concept script
+├── requirements.txt      — Python dependencies
+├── data/
+│   ├── KDDTrain+.txt     — NSL-KDD training set
+│   └── KDDTest+.txt      — NSL-KDD test set
+└── model/                — reserved for saved trained models (Phase 2+)
 ```
 
 ## Tech Stack
@@ -82,7 +77,6 @@ final-year-project/
 
 ## Getting Started
 ```bash
-cd code
 pip install -r requirements.txt
 python poc.py
 ```
