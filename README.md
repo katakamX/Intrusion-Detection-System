@@ -46,33 +46,38 @@ Traditional signature/rule-based Intrusion Detection Systems (IDS) match traffic
 
 ## Architecture
 ```
-NSL-KDD dataset  →  Preprocessing  →  ML Classifier  →  Evaluation  →  (Phase 3) Live dashboard
- (labeled network     (encode categorical   (Random Forest,     (accuracy, precision,
-  connection records)   features, binarize    multi-class in      recall, confusion
-                        label)                Phase 2)             matrix)
+NSL-KDD dataset  →  Preprocessing  →  ML Classifiers  →  Evaluation  →  Streamlit dashboard
+ (labeled network     (encode categorical   (Random Forest,     (accuracy, precision,    (sample/upload
+  connection records)   features, binarize    XGBoost, Neural      recall, confusion        traffic, live
+                        or multi-class label)  Net — best saved)    matrix)                  predictions)
 ```
 - **Data layer**: NSL-KDD — each record is a network connection summarized into 41 features (duration, protocol type, service, flag, byte counts, error rates, etc.) plus a label.
-- **Preprocessing**: categorical columns label-encoded; label collapsed to `normal` vs `attack` for the binary baseline.
-- **Model**: Random Forest Classifier — fast to train, handles mixed feature types, gives interpretable feature importances.
+- **Preprocessing**: categorical columns label-encoded; label collapsed to `normal` vs `attack` for the Phase 1 binary baseline, or grouped into 5 attack categories for Phase 2+.
+- **Models**: Random Forest (Phase 1 baseline), compared against XGBoost and a Neural Network in Phase 2 — all fast to train, no GPU needed; best model persisted via `joblib`.
 - **Evaluation**: accuracy, precision, recall, confusion matrix — recall matters most here, since a missed attack (false negative) is worse than a false alarm.
+- **Serving layer**: the Streamlit dashboard (`app.py`) loads the persisted model and classifies traffic interactively, so nothing needs retraining at demo time.
 
 ## Repository Structure
 ```
 .
 ├── README.md             — you are here
-├── poc.py                — Phase 1 proof-of-concept script
+├── .gitignore            — excludes venv/, caches, and saved model binaries
+├── poc.py                — Phase 1: binary (normal/attack) proof-of-concept
+├── phase2.py             — Phase 2: multi-class classification + model comparison
+├── app.py                — Phase 3: Streamlit dashboard
 ├── requirements.txt      — Python dependencies
 ├── data/
 │   ├── KDDTrain+.txt     — NSL-KDD training set
 │   └── KDDTest+.txt      — NSL-KDD test set
-└── model/                — reserved for saved trained models (Phase 2+)
+└── model/                — trained model + encoders + scaler, produced by phase2.py (gitignored)
 ```
 
 ## Tech Stack
 - **Language**: Python 3
-- **ML**: scikit-learn (Random Forest; more algorithms in Phase 2)
+- **ML**: scikit-learn (Random Forest, Neural Network/MLP), XGBoost
 - **Data**: pandas
-- **Planned (Phase 3)**: Streamlit for the dashboard, joblib for model persistence
+- **Dashboard**: Streamlit
+- **Persistence**: joblib
 
 ## Dataset
 [**NSL-KDD**](https://www.unb.ca/cic/datasets/nsl.html) — the de-duplicated, improved version of the classic KDD'99 Cup dataset, and the most widely cited benchmark in IDS research. Using a recognized benchmark keeps results comparable to published literature. Notably, its official test set deliberately includes attack types absent from the training set, to test generalization rather than memorization — this project's results are discussed with that in mind (see [Results](#results-so-far)).
