@@ -31,17 +31,18 @@ Traditional signature/rule-based Intrusion Detection Systems (IDS) match traffic
 5. Package the trained model into an interactive dashboard for live/batch traffic classification.
 
 ## Project Status
-**Current stage: Phase 2 — Multi-class classification + model comparison (complete).**
+**Current stage: Phase 3 — Interactive dashboard (complete).**
 
 | Phase | Description | Status |
 |---|---|---|
 | 1 | Data pipeline + baseline binary classifier (Random Forest) on NSL-KDD, with evaluation metrics | ✅ Done |
 | 2 | Multi-class attack-category classification (DoS/Probe/R2L/U2R/normal); compare Random Forest, XGBoost, Neural Net; persist best model | ✅ Done |
-| 3 | Interactive Streamlit dashboard — upload/stream traffic, live predictions, visual alerts | ⏳ Planned |
+| 3 | Interactive Streamlit dashboard — upload/stream traffic, live predictions, visual alerts | ✅ Done |
 | 4 | Stretch: live packet capture integration, real-time monitoring | 💭 Stretch goal |
 
 - `poc.py` — Phase 1 binary (normal vs. attack) baseline.
-- `phase2.py` — Phase 2: classifies traffic into 5 categories (normal, DoS, Probe, R2L, U2R), trains and compares Random Forest / XGBoost / a Neural Network (MLP), and saves the best model + encoders + scaler to `model/` via `joblib` for reuse without retraining (needed by the Phase 3 dashboard).
+- `phase2.py` — Phase 2: classifies traffic into 5 categories (normal, DoS, Probe, R2L, U2R), trains and compares Random Forest / XGBoost / a Neural Network (MLP), and saves the best model + encoders + scaler to `model/` via `joblib` for reuse without retraining.
+- `app.py` — Phase 3: a Streamlit dashboard that loads the saved Phase 2 model and classifies traffic sampled from the NSL-KDD test set or uploaded as a CSV, showing live predictions, an alert count, a per-category chart, and a highlighted results table.
 
 ## Architecture
 ```
@@ -79,9 +80,11 @@ NSL-KDD dataset  →  Preprocessing  →  ML Classifier  →  Evaluation  →  (
 ## Getting Started
 ```bash
 pip install -r requirements.txt
-python poc.py
+python poc.py        # Phase 1: binary baseline
+python phase2.py      # Phase 2: multi-class model comparison, saves model/ artifacts
+streamlit run app.py  # Phase 3: interactive dashboard (requires model/ from phase2.py)
 ```
-This prints dataset size, training progress, and the evaluation report (accuracy, precision, recall, confusion matrix, top feature importances).
+`poc.py` prints dataset size, training progress, and the evaluation report (accuracy, precision, recall, confusion matrix, top feature importances). `phase2.py` must be run at least once before `app.py`, since the dashboard loads its saved model from `model/`.
 
 ## Results So Far
 Phase 1 baseline (Random Forest, binary normal-vs-attack) on the official NSL-KDD test split:
@@ -109,10 +112,18 @@ The Neural Network edges out the others on macro-F1 and was saved as the product
 
 **Why R2L/U2R recall is low across all three models:** both categories are extremely rare in training data (995 R2L and just 52 U2R records out of ~126,000) and the official test set again injects attack subtypes absent from training — the same generalization challenge noted in Phase 1, now visible per-category instead of being averaged away by the binary view. This is a known, published limitation of NSL-KDD and a legitimate discussion point: class imbalance + unseen-attack generalization is exactly the kind of real-world problem production IDS have to deal with, and it motivates Phase 3's focus on an interactive dashboard that can surface these per-class confidence differences to a human analyst rather than a single opaque verdict.
 
+## Dashboard (Phase 3)
+`app.py` is a Streamlit app that loads the Phase 2 model and lets you:
+- **Sample bundled NSL-KDD test traffic** — pick a sample size, see live predictions against known ground truth (shows a running accuracy metric for that batch).
+- **Upload your own CSV** — same raw NSL-KDD format (41 features, with or without the trailing label/difficulty columns); unseen categorical values fall back gracefully instead of crashing.
+- View a **bar chart** of predicted categories, an **alert count**, and a **results table** with attack rows highlighted in red.
+
+Run it with `streamlit run app.py` (after `phase2.py` has produced `model/best_model.joblib` at least once).
+
 ## Roadmap
 - [x] Multi-class classification (identify specific attack type, not just normal/attack)
 - [x] Compare Random Forest against XGBoost and a neural network baseline
 - [x] Persist trained models with `joblib` for reuse without retraining
-- [ ] Streamlit dashboard: upload/stream traffic → live predictions → visual alerts and charts
+- [x] Streamlit dashboard: upload/stream traffic → live predictions → visual alerts and charts
 - [ ] Stretch: live packet capture (e.g. via `scapy`) for real-time monitoring instead of static CSVs
 - [ ] Stretch: address R2L/U2R class imbalance (e.g. SMOTE oversampling, class weighting)
