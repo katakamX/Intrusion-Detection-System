@@ -1,8 +1,6 @@
 # ML-NIDS — Machine Learning-Based Network Intrusion Detection System
 
-A final-year engineering project that detects malicious network traffic using machine learning instead of fixed signature rules, so it can generalize to attack variants it wasn't explicitly trained on.
-
-**Student:** Aditya Katakam (23BTRCL027) · **Guide:** Dr. J Somasekar · **Dept:** CSE-AIML, JAIN (Deemed-to-be University)
+Detects malicious network traffic using machine learning instead of fixed signature rules, so it can generalize to attack variants it wasn't explicitly trained on.
 
 ---
 
